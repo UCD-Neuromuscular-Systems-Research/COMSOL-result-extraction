@@ -1,0 +1,40 @@
+% === USER INPUTS ===
+modelName = input('Enter model name (e.g. B33015_Mesh0_E1-E8_260625v63.mph): ', 's');
+gridName  = input('Enter grid name (e.g. BSgrid.txt): ', 's');
+numLoops  = input('Enter number of loops/electrodes to export: ');
+
+% Strip extensions for cleaner filenames
+[~, modelBase, ~] = fileparts(modelName);
+[~, gridBase,  ~] = fileparts(gridName);
+
+% === LOAD MODEL ===
+model = mphload(modelName);
+
+% === SET GRID DATASET ===
+model.result.dataset.create('cpt1', 'CutPoint3D');
+model.result.dataset('cpt1').label(gridName);
+model.result.dataset('cpt1').set('method', 'file');
+model.result.dataset('cpt1').set('filename', gridName);
+model.result.dataset('cpt1').set('filename', gridName);
+model.result.export.create('data1', 'Data');
+model.result.export('data1').set('data', 'cpt1');
+model.result.dataset('dset1').selection.geom('geom1', 3);
+model.result.dataset('dset1').selection.inherit(false);
+model.result.dataset('dset1').selection.set([2]);
+model.result.export('data1').set('looplevelinput', {'manual'});
+
+% === LOOP ===
+for idx = 1:numLoops
+
+    model.result.export('data1').set('looplevel', idx);
+    model.result.export('data1').set('expr', {'V'});
+    model.result.export('data1').set('unit', {'V'});
+    model.result.export('data1').set('descr', {'Electric potential'});
+
+    % NEW → output filename includes the model name + grid name
+    outFile = sprintf('%s_E%d_%s_V.txt', modelBase, idx, gridBase);
+
+    model.result.export('data1').set('filename', outFile);
+    model.result.export('data1').run;
+
+end
